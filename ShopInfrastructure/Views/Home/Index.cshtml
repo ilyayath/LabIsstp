@@ -1,0 +1,80 @@
+﻿@using ShopDomain.Models
+
+@{
+    ViewData["Title"] = "Головна сторінка";
+}
+
+<div class="container text-center mt-5">
+    <h1 class="mb-3 display-4 fw-bold text-uppercase text-primary animate__animated animate__bounceIn">
+        Ласкаво просимо до GOATShop!
+    </h1>
+    <p class="lead text-secondary animate__animated animate__fadeInUp animate__delay-1s">
+        Знайдіть унікальний футбольний мерч улюблених команд! ⚽🔥
+    </p>
+
+    <div class="banner-container mt-4">
+        <img src="~/images/home-banner.webp" class="img-fluid rounded shadow-lg banner-image" alt="Футбольний мерч">
+    </div>
+
+    <a href="@Url.Action("Index", "Merchandises")" class="btn btn-warning btn-lg mt-4 px-5 py-3 fw-bold animate__animated animate__pulse animate__delay-2s">
+        🔍 Переглянути товари
+    </a>
+
+    <!-- Додатковий блок із закликом до дії -->
+    <div class="mt-5">
+        <p class="text-muted animate__animated animate__fadeInUp animate__delay-3s">
+            Приєднуйтесь до спільноти фанатів футболу вже сьогодні!
+        </p>
+        <a href="@Url.Action("Register", "Auth")" class="btn btn-outline-primary btn-sm animate__animated animate__fadeInUp animate__delay-3s">
+            Зареєструватися
+        </a>
+    </div>
+</div>
+
+<!-- Підключення Animate.css для анімацій -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+<style>
+    .banner-container {
+        max-width: 100%;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+    }
+
+    .banner-image {
+        width: 100%;
+        max-width: 800px;
+        height: auto;
+        border-radius: 15px;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease-in-out;
+    }
+
+        .banner-image:hover {
+            transform: scale(1.03);
+        }
+
+    h1 {
+        font-size: 2.8rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    p.lead {
+        font-size: 1.4rem;
+    }
+
+    .btn-lg {
+        font-size: 1.3rem;
+        border-radius: 8px;
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        padding: 15px 30px;
+    }
+
+        .btn-lg:hover {
+            background: #ffca2c;
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+</style>

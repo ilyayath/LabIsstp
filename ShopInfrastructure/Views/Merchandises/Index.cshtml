@@ -1,0 +1,27 @@
+﻿@model List<ShopDomain.Models.Merchandise>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Мерч</h2>
+    <div class="row">
+        @foreach (var merch in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@merch.Name</h5>
+                        <p class="card-text">@merch.Price.ToString("C")</p>
+                        <button class="btn btn-primary add-to-cart" data-merchandise-id="@merch.Id">Додати в кошик</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', addToCart);
+        });
+    </script>
+}

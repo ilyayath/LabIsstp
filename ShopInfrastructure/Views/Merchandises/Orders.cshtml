@@ -1,0 +1,57 @@
+﻿@model List<ShopDomain.Models.MerchOrder>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Мої замовлення</h2>
+    @if (Model == null || !Model.Any())
+    {
+        <p class="text-center">У вас поки немає замовлень.</p>
+        <div class="text-center">
+            <a asp-controller="Merchandises" asp-action="Index" class="btn btn-primary">Перейти до покупок</a>
+        </div>
+    }
+    else
+    {
+        <div class="accordion" id="ordersAccordion">
+            @foreach (var order in Model)
+            {
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading_@order.Id">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@order.Id" aria-expanded="false" aria-controls="collapse_@order.Id">
+                            Замовлення #@order.Id від @(order.OrderDate?.ToString("dd.MM.yyyy") ?? "Невідомо") -
+                            @(order.OrderItems.Sum(oi => oi.Merch.Price * oi.Quantity).ToString("C"))
+                            (@(order.Status?.StatusName ?? "Невідомий статус"))
+                        </button>
+                    </h2>
+                    <div id="collapse_@order.Id" class="accordion-collapse collapse" aria-labelledby="heading_@order.Id" data-bs-parent="#ordersAccordion">
+                        <div class="accordion-body">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Товар</th>
+                                        <th>Кількість</th>
+                                        <th>Ціна</th>
+                                        <th>Сума</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in order.OrderItems)
+                                    {
+                                        <tr>
+                                            <td>@item.Merch.Name</td>
+                                            <td>@item.Quantity</td>
+                                            <td>@item.Merch.Price.ToString("C")</td>
+                                            <td>@(item.Merch.Price * item.Quantity).ToString("C")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="text-center mt-4">
+            <a asp-controller="Merchandises" asp-action="Index" class="btn btn-secondary">Повернутися до покупок</a>
+        </div>
+    }
+</div>

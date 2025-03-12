@@ -1,0 +1,66 @@
+﻿@model List<ShopDomain.Models.UserCart>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Ваш кошик</h2>
+    @if (Model == null || !Model.Any())
+    {
+        <p class="text-center">Ваш кошик порожній.</p>
+        <div class="text-center">
+            <a asp-controller="Merchandises" asp-action="Index" class="btn btn-primary">Повернутися до покупок</a>
+        </div>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th>Кількість</th>
+                    <th>Дія</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Merchandise.Name</td>
+                        <td>@item.Quantity</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm remove-from-cart" data-merchandise-id="@item.MerchandiseId">Видалити</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="text-end">
+            <a asp-controller="Merchandises" asp-action="Index" class="btn btn-secondary">Продовжити покупки</a>
+            <button class="btn btn-success">Оформити замовлення</button>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.remove-from-cart').forEach(button => {
+            button.addEventListener('click', function () {
+                const merchandiseId = this.dataset.merchandiseId;
+                const userId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
+
+                fetch('/api/Cart/remove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ userId, merchandiseId })
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            location.reload(); // Оновлюємо сторінку після видалення
+                        }
+                    })
+                    .catch(error => console.error('Error removing from cart:', error));
+            });
+        });
+    </script>
+}
