@@ -56,10 +56,64 @@ namespace ShopInfrastructure.Controllers
         }
 
         // Додаємо Index для перегляду товарів (якщо ще немає)
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString = "", int? brandId = null, int? categoryId = null, int? sizeId = null, int? teamId = null, decimal? minPrice = null, decimal? maxPrice = null)
         {
-            var merchandises = await _context.Merchandises.ToListAsync();
-            return View(merchandises);
+            // Завантажуємо списки для фільтрів
+            ViewBag.Brands = await _context.Brands.ToListAsync();
+            ViewBag.Categories = await _context.Categories.ToListAsync();
+            ViewBag.Sizes = await _context.Sizes.ToListAsync();
+            ViewBag.Teams = await _context.Teams.ToListAsync();
+
+            // Базовий запит
+            var merchandises = _context.Merchandises
+                .Include(m => m.Brand)
+                .Include(m => m.Category)
+                .Include(m => m.Size)
+                .Include(m => m.Team)
+                .AsQueryable();
+
+            // Фільтр за пошуковим рядком
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                merchandises = merchandises.Where(m => m.Name.Contains(searchString));
+            }
+
+            // Фільтр за брендом
+            if (brandId.HasValue)
+            {
+                merchandises = merchandises.Where(m => m.BrandId == brandId.Value);
+            }
+
+            // Фільтр за категорією
+            if (categoryId.HasValue)
+            {
+                merchandises = merchandises.Where(m => m.CategoryId == categoryId.Value);
+            }
+
+            // Фільтр за розміром
+            if (sizeId.HasValue)
+            {
+                merchandises = merchandises.Where(m => m.SizeId == sizeId.Value);
+            }
+
+            // Фільтр за командою
+            if (teamId.HasValue)
+            {
+                merchandises = merchandises.Where(m => m.TeamId == teamId.Value);
+            }
+
+            // Фільтр за ціною
+            if (minPrice.HasValue)
+            {
+                merchandises = merchandises.Where(m => m.Price >= minPrice.Value);
+            }
+            if (maxPrice.HasValue)
+            {
+                merchandises = merchandises.Where(m => m.Price <= maxPrice.Value);
+            }
+
+            var result = await merchandises.ToListAsync();
+            return View(result);
         }
 
         // Додаємо метод для створення замовлення з кошика (опціонально)

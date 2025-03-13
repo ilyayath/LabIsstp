@@ -2,15 +2,84 @@
 
 <div class="container mt-5">
     <h2 class="text-center mb-4">Мерч</h2>
+
+    <!-- Фільтри та пошук -->
+    <form asp-action="Index" method="get" class="mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="searchString" class="form-control" placeholder="Пошук за назвою..." value="@ViewBag.SearchString" />
+            </div>
+            <div class="col-md-2">
+                <select name="brandId" class="form-select">
+                    <option value="">Усі бренди</option>
+                    @foreach (var brand in ViewBag.Brands)
+                    {
+                        <option value="@brand.Id" selected="@(brand.Id == ViewBag.BrandId ? "selected" : null)">@brand.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="categoryId" class="form-select">
+                    <option value="">Усі категорії</option>
+                    @foreach (var category in ViewBag.Categories)
+                    {
+                        <option value="@category.Id" selected="@(category.Id == ViewBag.CategoryId ? "selected" : null)">@category.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="sizeId" class="form-select">
+                    <option value="">Усі розміри</option>
+                    @foreach (var size in ViewBag.Sizes)
+                    {
+                        <option value="@size.Id" selected="@(size.Id == ViewBag.SizeId ? "selected" : null)">@size.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="teamId" class="form-select">
+                    <option value="">Усі команди</option>
+                    @foreach (var team in ViewBag.Teams)
+                    {
+                        <option value="@team.Id" selected="@(team.Id == ViewBag.TeamId ? "selected" : null)">@team.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="number" name="minPrice" class="form-control" placeholder="Мін. ціна" value="@ViewBag.MinPrice" />
+                    <input type="number" name="maxPrice" class="form-control" placeholder="Макс. ціна" value="@ViewBag.MaxPrice" />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Фільтрувати</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Список товарів -->
     <div class="row">
         @foreach (var merch in Model)
         {
             <div class="col-md-4 mb-4">
-                <div class="card">
+                <div class="card h-100">
+                    @if (!string.IsNullOrEmpty(merch.ImageUrl))
+                    {
+                        <img src="@merch.ImageUrl" class="card-img-top" alt="@merch.Name" style="height: 200px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <img src="~/images/default-merch.jpg" class="card-img-top" alt="Без фото" style="height: 200px; object-fit: cover;" />
+                    }
                     <div class="card-body">
                         <h5 class="card-title">@merch.Name</h5>
                         <p class="card-text">@merch.Price.ToString("C")</p>
-                        <button class="btn btn-primary add-to-cart" data-merchandise-id="@merch.Id">Додати в кошик</button>
+                        <p class="card-text"><small class="text-muted">Бренд: @(merch.Brand?.BrandName ?? "Немає")</small></p>
+                        <p class="card-text"><small class="text-muted">Категорія: @(merch.Category?.CategoryName ?? "Немає")</small></p>
+                        <p class="card-text"><small class="text-muted">Розмір: @(merch.Size?.SizeName ?? "Немає")</small></p>
+                        <p class="card-text"><small class="text-muted">Команда: @(merch.Team?.TeamName ?? "Немає")</small></p>
+                        <button class="btn btn-info btn-sm details-button" data-merch-id="@merch.Id" data-bs-toggle="modal" data-bs-target="#merchDetailsModal">Деталі</button>
+                        <button class="btn btn-primary btn-sm add-to-cart" data-merchandise-id="@merch.Id">Додати в кошик</button>
                     </div>
                 </div>
             </div>
@@ -18,10 +87,61 @@
     </div>
 </div>
 
+<!-- Модальне вікно для деталей -->
+<div class="modal fade" id="merchDetailsModal" tabindex="-1" aria-labelledby="merchDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="merchDetailsModalLabel">Деталі товару</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <img id="modalImage" src="" class="img-fluid mb-3" alt="Товар" />
+                <h5 id="modalName"></h5>
+                <p><strong>Ціна:</strong> <span id="modalPrice"></span></p>
+                <p><strong>Бренд:</strong> <span id="modalBrand"></span></p>
+                <p><strong>Категорія:</strong> <span id="modalCategory"></span></p>
+                <p><strong>Розмір:</strong> <span id="modalSize"></span></p>
+                <p><strong>Команда:</strong> <span id="modalTeam"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрити</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        document.querySelectorAll('.add-to-cart').forEach(button => {
-            button.addEventListener('click', addToCart);
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll('.add-to-cart').forEach(button => {
+                button.addEventListener('click', addToCart);
+            });
+
+            document.querySelectorAll('.details-button').forEach(button => {
+                button.addEventListener('click', showMerchDetails);
+            });
         });
+
+        function showMerchDetails(event) {
+            const button = event.target;
+            const merchId = button.getAttribute('data-merch-id');
+            const merchItem = button.closest('.card');
+            const name = merchItem.querySelector('.card-title').textContent;
+            const price = merchItem.querySelector('.card-text').textContent;
+            const image = merchItem.querySelector('.card-img-top').src;
+            const brand = merchItem.querySelectorAll('.text-muted')[0].textContent.replace('Бренд: ', '');
+            const category = merchItem.querySelectorAll('.text-muted')[1].textContent.replace('Категорія: ', '');
+            const size = merchItem.querySelectorAll('.text-muted')[2].textContent.replace('Розмір: ', '');
+            const team = merchItem.querySelectorAll('.text-muted')[3].textContent.replace('Команда: ', '');
+
+            document.getElementById('modalName').textContent = name;
+            document.getElementById('modalPrice').textContent = price;
+            document.getElementById('modalImage').src = image;
+            document.getElementById('modalBrand').textContent = brand;
+            document.getElementById('modalCategory').textContent = category;
+            document.getElementById('modalSize').textContent = size;
+            document.getElementById('modalTeam').textContent = team;
+        }
     </script>
 }
