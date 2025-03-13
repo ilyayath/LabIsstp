@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ShopMVC.ShopInfrastructure;
@@ -11,9 +12,11 @@ using ShopMVC.ShopInfrastructure;
 namespace ShopInfrastructure.Migrations
 {
     [DbContext(typeof(MerchShopeContext))]
-    partial class MerchShopeContextModelSnapshot : ModelSnapshot
+    [Migration("20250313085857_AddPriceToUserCart")]
+    partial class AddPriceToUserCart
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -360,22 +363,16 @@ namespace ShopInfrastructure.Migrations
                     b.Property<int?>("StatusId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.HasKey("Id")
                         .HasName("merchorders_pkey");
 
-                    b.HasIndex("BuyerId");
+                    b.HasIndex(new[] { "BuyerId" }, "IX_MerchOrders_BuyerId");
 
                     b.HasIndex(new[] { "PaymentId" }, "IX_MerchOrders_PaymentId");
 
                     b.HasIndex(new[] { "ShipmentId" }, "IX_MerchOrders_ShipmentId");
 
                     b.HasIndex(new[] { "StatusId" }, "IX_MerchOrders_StatusId");
-
-                    b.HasIndex(new[] { "UserId" }, "IX_MerchOrders_UserId");
 
                     b.ToTable("MerchOrders");
                 });
@@ -686,9 +683,11 @@ namespace ShopInfrastructure.Migrations
 
             modelBuilder.Entity("ShopDomain.Models.MerchOrder", b =>
                 {
-                    b.HasOne("ShopDomain.Models.Buyer", null)
+                    b.HasOne("ShopDomain.Models.Buyer", "Buyer")
                         .WithMany("MerchOrders")
-                        .HasForeignKey("BuyerId");
+                        .HasForeignKey("BuyerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("merchorders_buyerid_fkey");
 
                     b.HasOne("ShopDomain.Models.Payment", "Payment")
                         .WithMany("MerchOrders")
@@ -708,20 +707,13 @@ namespace ShopInfrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("merchorders_statusid_fkey");
 
-                    b.HasOne("ShopDomain.Models.AppUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("merchorders_userid_fkey");
+                    b.Navigation("Buyer");
 
                     b.Navigation("Payment");
 
                     b.Navigation("Shipment");
 
                     b.Navigation("Status");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ShopDomain.Models.Merchandise", b =>

@@ -90,17 +90,18 @@ namespace ShopMVC.ShopInfrastructure
             modelBuilder.Entity<MerchOrder>(entity =>
             {
                 entity.HasKey(e => e.Id).HasName("merchorders_pkey");
-                entity.HasIndex(e => e.BuyerId, "IX_MerchOrders_BuyerId");
+                entity.HasIndex(e => e.UserId, "IX_MerchOrders_UserId"); // Змінено з BuyerId
                 entity.HasIndex(e => e.PaymentId, "IX_MerchOrders_PaymentId");
                 entity.HasIndex(e => e.ShipmentId, "IX_MerchOrders_ShipmentId");
                 entity.HasIndex(e => e.StatusId, "IX_MerchOrders_StatusId");
                 entity.Property(e => e.OrderDate)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP")
                     .HasColumnType("timestamp without time zone");
-                entity.HasOne(d => d.Buyer).WithMany(p => p.MerchOrders)
-                    .HasForeignKey(d => d.BuyerId)
+                entity.HasOne(d => d.User) // Змінено з Buyer на User
+                    .WithMany()
+                    .HasForeignKey(d => d.UserId) // Змінено з BuyerId на UserId
                     .OnDelete(DeleteBehavior.Cascade)
-                    .HasConstraintName("merchorders_buyerid_fkey");
+                    .HasConstraintName("merchorders_userid_fkey");
                 entity.HasOne(d => d.Payment).WithMany(p => p.MerchOrders)
                     .HasForeignKey(d => d.PaymentId)
                     .OnDelete(DeleteBehavior.SetNull)

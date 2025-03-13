@@ -14,7 +14,7 @@
                     <option value="">Усі бренди</option>
                     @foreach (var brand in ViewBag.Brands)
                     {
-                        <option value="@brand.Id" selected="@(brand.Id == ViewBag.BrandId ? "selected" : null)">@brand.Name</option>
+                        <option value="@brand.Id" selected="@(brand.Id == ViewBag.BrandId ? "selected" : null)">@brand.BrandName</option>
                     }
                 </select>
             </div>
@@ -23,7 +23,7 @@
                     <option value="">Усі категорії</option>
                     @foreach (var category in ViewBag.Categories)
                     {
-                        <option value="@category.Id" selected="@(category.Id == ViewBag.CategoryId ? "selected" : null)">@category.Name</option>
+                        <option value="@category.Id" selected="@(category.Id == ViewBag.CategoryId ? "selected" : null)">@category.CategoryName</option>
                     }
                 </select>
             </div>
@@ -32,7 +32,7 @@
                     <option value="">Усі розміри</option>
                     @foreach (var size in ViewBag.Sizes)
                     {
-                        <option value="@size.Id" selected="@(size.Id == ViewBag.SizeId ? "selected" : null)">@size.Name</option>
+                        <option value="@size.Id" selected="@(size.Id == ViewBag.SizeId ? "selected" : null)">@size.SizeName</option>
                     }
                 </select>
             </div>
@@ -41,7 +41,7 @@
                     <option value="">Усі команди</option>
                     @foreach (var team in ViewBag.Teams)
                     {
-                        <option value="@team.Id" selected="@(team.Id == ViewBag.TeamId ? "selected" : null)">@team.Name</option>
+                        <option value="@team.Id" selected="@(team.Id == ViewBag.TeamId ? "selected" : null)">@team.TeamName</option>
                     }
                 </select>
             </div>
@@ -114,12 +114,12 @@
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            document.querySelectorAll('.add-to-cart').forEach(button => {
-                button.addEventListener('click', addToCart);
-            });
-
             document.querySelectorAll('.details-button').forEach(button => {
                 button.addEventListener('click', showMerchDetails);
+            });
+
+            document.querySelectorAll('.add-to-cart').forEach(button => {
+                button.addEventListener('click', addToCart);
             });
         });
 
@@ -142,6 +142,35 @@
             document.getElementById('modalCategory').textContent = category;
             document.getElementById('modalSize').textContent = size;
             document.getElementById('modalTeam').textContent = team;
+        }
+
+        function addToCart(event) {
+            const button = event.target;
+            const merchandiseId = parseInt(button.getAttribute('data-merchandise-id'));
+            const userId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
+
+            fetch('/api/Cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ merchandiseId, quantity: 1 }) // userId додається автоматично на сервері
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Помилка додавання до кошика: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert(data.message); // Використовуємо повідомлення від сервера
+                updateCartCount(); // Оновлюємо лічильник у _Layout.cshtml
+            })
+            .catch(error => {
+                console.error('Error adding to cart:', error);
+                alert('Не вдалося додати товар до кошика.');
+            });
         }
     </script>
 }

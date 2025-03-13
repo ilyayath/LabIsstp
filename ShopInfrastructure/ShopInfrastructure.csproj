@@ -26,4 +26,8 @@
     <ProjectReference Include="..\LibraryDomain\ShopDomain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\NewFolder\" />
+  </ItemGroup>
+
 </Project>

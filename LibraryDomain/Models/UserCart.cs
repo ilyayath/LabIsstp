@@ -13,5 +13,6 @@ public partial class UserCart : Entity
 
     public int Quantity { get; set; }
 
+    public decimal Price { get; set; }
     public virtual Merchandise Merchandise { get; set; } = null!;
 }

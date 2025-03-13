@@ -1,0 +1,38 @@
+﻿@model List<ShopDomain.Models.UserCart>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Підтвердження замовлення</h2>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Товар</th>
+                <th>Ціна</th>
+                <th>Кількість</th>
+                <th>Сума</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Merchandise.Name</td>
+                    <td>@item.Price.ToString("C")</td>
+                    <td>@item.Quantity</td>
+                    <td>@((item.Price * item.Quantity).ToString("C"))</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="text-end"><strong>Загальна сума:</strong></td>
+                <td>@Model.Sum(i => i.Price * i.Quantity).ToString("C")</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <form asp-action="CreateOrderFromCart" method="post" class="text-end">
+        <button type="submit" class="btn btn-success">Підтвердити замовлення</button>
+        <a asp-action="Cart" class="btn btn-secondary">Повернутися до кошика</a>
+    </form>
+</div>

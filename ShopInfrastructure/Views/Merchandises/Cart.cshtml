@@ -1,22 +1,18 @@
 ﻿@model List<ShopDomain.Models.UserCart>
 
 <div class="container mt-5">
-    <h2 class="text-center mb-4">Ваш кошик</h2>
-    @if (Model == null || !Model.Any())
-    {
-        <p class="text-center">Ваш кошик порожній.</p>
-        <div class="text-center">
-            <a asp-controller="Merchandises" asp-action="Index" class="btn btn-primary">Повернутися до покупок</a>
-        </div>
-    }
-    else
+    <h2 class="text-center mb-4">Кошик</h2>
+
+    @if (Model.Any())
     {
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>Товар</th>
+                    <th>Ціна</th>
                     <th>Кількість</th>
-                    <th>Дія</th>
+                    <th>Сума</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -24,18 +20,30 @@
                 {
                     <tr>
                         <td>@item.Merchandise.Name</td>
+                        <td>@item.Price.ToString("C")</td>
                         <td>@item.Quantity</td>
+                        <td>@((item.Price * item.Quantity).ToString("C"))</td>
                         <td>
                             <button class="btn btn-danger btn-sm remove-from-cart" data-merchandise-id="@item.MerchandiseId">Видалити</button>
                         </td>
                     </tr>
                 }
             </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-end"><strong>Загальна сума:</strong></td>
+                    <td>@Model.Sum(i => i.Price * i.Quantity).ToString("C")</td>
+                    <td></td>
+                </tr>
+            </tfoot>
         </table>
         <div class="text-end">
-            <a asp-controller="Merchandises" asp-action="Index" class="btn btn-secondary">Продовжити покупки</a>
-            <button class="btn btn-success">Оформити замовлення</button>
+            <a asp-action="PlaceOrder" class="btn btn-primary">Оформити замовлення</a>
         </div>
+    }
+    else
+    {
+        <p class="text-center">Ваш кошик порожній.</p>
     }
 </div>
 
@@ -43,7 +51,7 @@
     <script>
         document.querySelectorAll('.remove-from-cart').forEach(button => {
             button.addEventListener('click', function () {
-                const merchandiseId = this.dataset.merchandiseId;
+                const merchandiseId = this.getAttribute('data-merchandise-id');
                 const userId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
 
                 fetch('/api/Cart/remove', {
@@ -52,14 +60,14 @@
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ userId, merchandiseId })
+                    body: JSON.stringify({ userId, merchandiseId: parseInt(merchandiseId) })
                 })
-                    .then(response => {
-                        if (response.ok) {
-                            location.reload(); // Оновлюємо сторінку після видалення
-                        }
-                    })
-                    .catch(error => console.error('Error removing from cart:', error));
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    location.reload(); // Оновлюємо сторінку
+                })
+                .catch(error => console.error('Error removing from cart:', error));
             });
         });
     </script>
