@@ -18,6 +18,7 @@ namespace ShopInfrastructure.Controllers
             _context = context;
         }
 
+        // Перегляд замовлень користувача
         [Authorize]
         public async Task<IActionResult> Orders()
         {
@@ -38,6 +39,7 @@ namespace ShopInfrastructure.Controllers
             return View(orders);
         }
 
+        // Перегляд кошика користувача
         [Authorize]
         public async Task<IActionResult> Cart()
         {
@@ -55,13 +57,30 @@ namespace ShopInfrastructure.Controllers
             return View(cartItems);
         }
 
-        public async Task<IActionResult> Index(string searchString = "", int? brandId = null, int? categoryId = null, int? sizeId = null, int? teamId = null, decimal? minPrice = null, decimal? maxPrice = null)
+        // Список товарів із фільтрами
+        public async Task<IActionResult> Index(string searchString = "", int[] brandIds = null, int[] categoryIds = null, int[] sizeIds = null, int[] teamIds = null, decimal? minPrice = null, decimal? maxPrice = null, bool clearFilters = false)
         {
-            ViewBag.Brands = await _context.Brands.ToListAsync();
-            ViewBag.Categories = await _context.Categories.ToListAsync();
-            ViewBag.Sizes = await _context.Sizes.ToListAsync();
-            ViewBag.Teams = await _context.Teams.ToListAsync();
+            if (clearFilters)
+            {
+                return RedirectToAction("Index");
+            }
 
+            // Зберігаємо параметри фільтра у ViewBag
+            ViewBag.SearchString = searchString;
+            ViewBag.BrandIds = brandIds ?? Array.Empty<int>();
+            ViewBag.CategoryIds = categoryIds ?? Array.Empty<int>();
+            ViewBag.SizeIds = sizeIds ?? Array.Empty<int>();
+            ViewBag.TeamIds = teamIds ?? Array.Empty<int>();
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
+
+            // Завантажуємо списки для фільтрів
+            ViewBag.Brands = await _context.Brands.OrderBy(b => b.BrandName).ToListAsync();
+            ViewBag.Categories = await _context.Categories.OrderBy(c => c.CategoryName).ToListAsync();
+            ViewBag.Sizes = await _context.Sizes.OrderBy(s => s.SizeName).ToListAsync();
+            ViewBag.Teams = await _context.Teams.OrderBy(t => t.TeamName).ToListAsync();
+
+            // Базовий запит
             var merchandises = _context.Merchandises
                 .Include(m => m.Brand)
                 .Include(m => m.Category)
@@ -69,21 +88,64 @@ namespace ShopInfrastructure.Controllers
                 .Include(m => m.Team)
                 .AsQueryable();
 
+            // Фільтри
             if (!string.IsNullOrEmpty(searchString))
             {
-                merchandises = merchandises.Where(m => m.Name.Contains(searchString));
+                merchandises = merchandises.Where(m => m.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase));
             }
-            if (brandId.HasValue) merchandises = merchandises.Where(m => m.BrandId == brandId.Value);
-            if (categoryId.HasValue) merchandises = merchandises.Where(m => m.CategoryId == categoryId.Value);
-            if (sizeId.HasValue) merchandises = merchandises.Where(m => m.SizeId == sizeId.Value);
-            if (teamId.HasValue) merchandises = merchandises.Where(m => m.TeamId == teamId.Value);
-            if (minPrice.HasValue) merchandises = merchandises.Where(m => m.Price >= minPrice.Value);
-            if (maxPrice.HasValue) merchandises = merchandises.Where(m => m.Price <= maxPrice.Value);
+            if (brandIds?.Length > 0)
+            {
+                merchandises = merchandises.Where(m => brandIds.Contains(m.BrandId.Value));
+            }
+            if (categoryIds?.Length > 0)
+            {
+                merchandises = merchandises.Where(m => categoryIds.Contains(m.CategoryId.Value));
+            }
+            if (sizeIds?.Length > 0)
+            {
+                merchandises = merchandises.Where(m => sizeIds.Contains(m.SizeId.Value));
+            }
+            if (teamIds?.Length > 0)
+            {
+                merchandises = merchandises.Where(m => teamIds.Contains(m.TeamId.Value));
+            }
+            if (minPrice.HasValue && minPrice >= 0)
+            {
+                merchandises = merchandises.Where(m => m.Price >= minPrice.Value);
+            }
+            if (maxPrice.HasValue && maxPrice >= 0)
+            {
+                merchandises = merchandises.Where(m => m.Price <= maxPrice.Value);
+            }
 
-            var result = await merchandises.ToListAsync();
+            var result = await merchandises.OrderBy(m => m.Name).ToListAsync();
             return View(result);
         }
 
+        // Деталі товару
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var merchandise = await _context.Merchandises
+                .Include(m => m.Brand)
+                .Include(m => m.Category)
+                .Include(m => m.Size)
+                .Include(m => m.Team)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (merchandise == null)
+            {
+                return NotFound();
+            }
+
+            return View(merchandise);
+        }
+
+        // Перегляд кошика перед оформленням замовлення
         [Authorize]
         public async Task<IActionResult> PlaceOrder()
         {
@@ -107,6 +169,7 @@ namespace ShopInfrastructure.Controllers
             return View(cartItems);
         }
 
+        // Створення замовлення з кошика
         [Authorize]
         public async Task<IActionResult> CreateOrderFromCart()
         {
@@ -129,9 +192,9 @@ namespace ShopInfrastructure.Controllers
 
             var order = new MerchOrder
             {
-                UserId = userId, // Використовуємо UserId
+                UserId = userId,
                 OrderDate = DateTime.Now,
-                StatusId = 1,
+                StatusId = 1, // Початковий статус замовлення
                 OrderItems = cartItems.Select(ci => new OrderItem
                 {
                     MerchId = ci.MerchandiseId,

@@ -1,0 +1,81 @@
+﻿@model ShopDomain.Models.Merchandise
+
+@{
+    ViewData["Title"] = "Деталі товару";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Деталі товару: @Model.Name</h2>
+
+    <div class="row">
+        <div class="col-md-6">
+            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+            {
+                <img src="@Model.ImageUrl" class="img-fluid mb-3" alt="@Model.Name" style="max-height: 400px; object-fit: cover; width: 100%;" />
+            }
+            else
+            {
+                <img src="~/images/default-merch.jpg" class="img-fluid mb-3" alt="Без фото" style="max-height: 400px; object-fit: cover; width: 100%;" />
+            }
+        </div>
+        <div class="col-md-6">
+            <h3>@Model.Name</h3>
+            <p><strong>Ціна:</strong> @Model.Price.ToString("C")</p>
+            <p><strong>Бренд:</strong> @(Model.Brand?.BrandName ?? "Немає")</p>
+            <p><strong>Категорія:</strong> @(Model.Category?.CategoryName ?? "Немає")</p>
+            <p><strong>Розмір:</strong> @(Model.Size?.SizeName ?? "Немає")</p>
+            <p><strong>Команда:</strong> @(Model.Team?.TeamName ?? "Немає")</p>
+
+            <a asp-action="Index" class="btn btn-secondary mt-3">Назад до списку</a>
+            <button class="btn btn-primary mt-3 add-to-cart" data-merchandise-id="@Model.Id">Додати в кошик</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .container {
+        max-width: 1200px;
+    }
+
+    .img-fluid {
+        border: 1px solid #ddd; /* Додано рамку для зображення */
+        border-radius: 5px; /* Закруглені кути */
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelector('.add-to-cart').addEventListener('click', addToCart);
+        });
+
+        function addToCart(event) {
+            const button = event.target;
+            const merchandiseId = parseInt(button.getAttribute('data-merchandise-id'));
+            const userId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
+
+            fetch('/api/Cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ merchandiseId, quantity: 1 })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Помилка додавання до кошика: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert(data.message);
+                updateCartCount();
+            })
+            .catch(error => {
+                console.error('Error adding to cart:', error);
+                alert('Не вдалося додати товар до кошика.');
+            });
+        }
+    </script>
+}
