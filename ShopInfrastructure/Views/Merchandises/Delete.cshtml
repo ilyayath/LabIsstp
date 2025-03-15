@@ -1,0 +1,47 @@
+﻿@model ShopDomain.Models.Merchandise
+
+@{
+    ViewData["Title"] = "Видалити товар";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Видалити товар: @Model.Name</h2>
+
+    <div class="alert alert-danger" role="alert">
+        Ви впевнені, що хочете видалити цей товар?
+    </div>
+
+    <dl class="row">
+        <dt class="col-sm-2">Назва</dt>
+        <dd class="col-sm-10">@Model.Name</dd>
+        <dt class="col-sm-2">Ціна</dt>
+        <dd class="col-sm-10">@Model.Price.ToString("C", CultureInfo.CurrentCulture)</dd>
+        <dt class="col-sm-2">Бренд</dt>
+        <dd class="col-sm-10">@(Model.Brand?.BrandName ?? "Немає")</dd>
+        <dt class="col-sm-2">Категорія</dt>
+        <dd class="col-sm-10">@(Model.Category?.CategoryName ?? "Немає")</dd>
+        <dt class="col-sm-2">Розмір</dt>
+        <dd class="col-sm-10">@(Model.Size?.SizeName ?? "Немає")</dd>
+        <dt class="col-sm-2">Команда</dt>
+        <dd class="col-sm-10">@(Model.Team?.TeamName ?? "Немає")</dd>
+        <dt class="col-sm-2">Опис</dt>
+    </dl>
+
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Видалити</button>
+        <a asp-action="AdminMerchandises" class="btn btn-secondary ml-2">Скасувати</a>
+    </form>
+</div>
+
+<style>
+    .container {
+        max-width: 800px;
+    }
+
+    .ml-2 {
+        margin-left: 0.5rem;
+    }
+</style>
+
+@using System.Globalization 

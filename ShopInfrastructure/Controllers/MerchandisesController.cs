@@ -6,7 +6,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using ShopMVC.ShopInfrastructure;
-
+using System.Diagnostics;
 namespace ShopInfrastructure.Controllers
 {
     public class MerchandisesController : Controller
@@ -19,7 +19,7 @@ namespace ShopInfrastructure.Controllers
         }
 
         // Перегляд замовлень користувача
-        [Authorize]
+        [Authorize(Roles = "User,Admin")]
         public async Task<IActionResult> Orders()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -40,7 +40,7 @@ namespace ShopInfrastructure.Controllers
         }
 
         // Перегляд кошика користувача
-        [Authorize]
+        [Authorize(Roles = "User,Admin")]
         public async Task<IActionResult> Cart()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -57,7 +57,7 @@ namespace ShopInfrastructure.Controllers
             return View(cartItems);
         }
 
-        // Список товарів із фільтрами
+        // Список товарів для всіх
         public async Task<IActionResult> Index(string searchString = "", int[] brandIds = null, int[] categoryIds = null, int[] sizeIds = null, int[] teamIds = null, decimal? minPrice = null, decimal? maxPrice = null, bool clearFilters = false)
         {
             if (clearFilters)
@@ -65,22 +65,19 @@ namespace ShopInfrastructure.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Зберігаємо параметри фільтра у ViewBag
             ViewBag.SearchString = searchString;
-            ViewBag.BrandIds = brandIds ?? Array.Empty<int>();
-            ViewBag.CategoryIds = categoryIds ?? Array.Empty<int>();
-            ViewBag.SizeIds = sizeIds ?? Array.Empty<int>();
-            ViewBag.TeamIds = teamIds ?? Array.Empty<int>();
+            ViewBag.BrandIds = brandIds != null ? brandIds.ToList() : new List<int>(); // Перетворюємо в список
+            ViewBag.CategoryIds = categoryIds != null ? categoryIds.ToList() : new List<int>();
+            ViewBag.SizeIds = sizeIds != null ? sizeIds.ToList() : new List<int>();
+            ViewBag.TeamIds = teamIds != null ? teamIds.ToList() : new List<int>();
             ViewBag.MinPrice = minPrice;
             ViewBag.MaxPrice = maxPrice;
 
-            // Завантажуємо списки для фільтрів
             ViewBag.Brands = await _context.Brands.OrderBy(b => b.BrandName).ToListAsync();
             ViewBag.Categories = await _context.Categories.OrderBy(c => c.CategoryName).ToListAsync();
             ViewBag.Sizes = await _context.Sizes.OrderBy(s => s.SizeName).ToListAsync();
             ViewBag.Teams = await _context.Teams.OrderBy(t => t.TeamName).ToListAsync();
 
-            // Базовий запит
             var merchandises = _context.Merchandises
                 .Include(m => m.Brand)
                 .Include(m => m.Category)
@@ -88,7 +85,6 @@ namespace ShopInfrastructure.Controllers
                 .Include(m => m.Team)
                 .AsQueryable();
 
-            // Фільтри
             if (!string.IsNullOrEmpty(searchString))
             {
                 merchandises = merchandises.Where(m => m.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase));
@@ -145,8 +141,8 @@ namespace ShopInfrastructure.Controllers
             return View(merchandise);
         }
 
-        // Перегляд кошика перед оформленням замовлення
-        [Authorize]
+        // Оформлення замовлення
+        [Authorize(Roles = "User,Admin")]
         public async Task<IActionResult> PlaceOrder()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -168,9 +164,40 @@ namespace ShopInfrastructure.Controllers
 
             return View(cartItems);
         }
+        // Нова дія для створення товару (GET)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.Brands = await _context.Brands.OrderBy(b => b.BrandName).ToListAsync();
+            ViewBag.Categories = await _context.Categories.OrderBy(c => c.CategoryName).ToListAsync();
+            ViewBag.Sizes = await _context.Sizes.OrderBy(s => s.SizeName).ToListAsync();
+            ViewBag.Teams = await _context.Teams.OrderBy(t => t.TeamName).ToListAsync();
 
-        // Створення замовлення з кошика
-        [Authorize]
+            return View(new Merchandise());
+        }
+
+        // Нова дія для створення товару (POST)
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("Name,Price,ImageUrl,BrandId,CategoryId,SizeId,TeamId,Description")] Merchandise merchandise)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Add(merchandise);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(AdminMerchandises));
+            }
+
+            ViewBag.Brands = await _context.Brands.OrderBy(b => b.BrandName).ToListAsync();
+            ViewBag.Categories = await _context.Categories.OrderBy(c => c.CategoryName).ToListAsync();
+            ViewBag.Sizes = await _context.Sizes.OrderBy(s => s.SizeName).ToListAsync();
+            ViewBag.Teams = await _context.Teams.OrderBy(t => t.TeamName).ToListAsync();
+
+            return View(merchandise);
+        }
+        // Створення замовлення
+        [Authorize(Roles = "User,Admin")]
         public async Task<IActionResult> CreateOrderFromCart()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -194,7 +221,7 @@ namespace ShopInfrastructure.Controllers
             {
                 UserId = userId,
                 OrderDate = DateTime.Now,
-                StatusId = 1, // Початковий статус замовлення
+                StatusId = 1,
                 OrderItems = cartItems.Select(ci => new OrderItem
                 {
                     MerchId = ci.MerchandiseId,
@@ -210,6 +237,169 @@ namespace ShopInfrastructure.Controllers
 
             TempData["SuccessMessage"] = "Замовлення успішно створено!";
             return RedirectToAction("Orders");
+        }
+
+        // Редагування товару (Admin)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var merchandise = await _context.Merchandises
+                .Include(m => m.Brand)
+                .Include(m => m.Category)
+                .Include(m => m.Size)
+                .Include(m => m.Team)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (merchandise == null)
+            {
+                return NotFound();
+            }
+
+            // Завантажуємо списки для випадаючих меню
+            ViewBag.Brands = await _context.Brands.OrderBy(b => b.BrandName).ToListAsync();
+            ViewBag.Categories = await _context.Categories.OrderBy(c => c.CategoryName).ToListAsync();
+            ViewBag.Sizes = await _context.Sizes.OrderBy(s => s.SizeName).ToListAsync();
+            var teams = await _context.Teams.OrderBy(t => t.TeamName).ToListAsync();
+            ViewBag.Teams = teams;
+
+            // Дебаг: виводимо кількість команд і поточний TeamId
+            Debug.WriteLine($"Teams count: {teams.Count}, Current TeamId: {merchandise.TeamId}");
+
+            return View(merchandise);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Price,ImageUrl,BrandId,CategoryId,SizeId,TeamId,Description")] Merchandise updatedMerchandise)
+        {
+            if (id != updatedMerchandise.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    var merchandise = await _context.Merchandises.FindAsync(id);
+                    if (merchandise == null)
+                    {
+                        return NotFound();
+                    }
+
+                    // Дебаг: виводимо отриманий TeamId
+                    Debug.WriteLine($"Received TeamId: {updatedMerchandise.TeamId}");
+
+                    merchandise.Name = updatedMerchandise.Name;
+                    merchandise.Price = updatedMerchandise.Price;
+                    merchandise.ImageUrl = updatedMerchandise.ImageUrl;
+                    merchandise.BrandId = updatedMerchandise.BrandId;
+                    merchandise.CategoryId = updatedMerchandise.CategoryId;
+                    merchandise.SizeId = updatedMerchandise.SizeId;
+                    merchandise.TeamId = updatedMerchandise.TeamId;
+
+
+                    _context.Update(merchandise);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!MerchandiseExists(updatedMerchandise.Id))
+                    {
+                        return NotFound();
+                    }
+                    throw;
+                }
+                return RedirectToAction(nameof(AdminMerchandises));
+            }
+
+            ViewBag.Brands = await _context.Brands.OrderBy(b => b.BrandName).ToListAsync();
+            ViewBag.Categories = await _context.Categories.OrderBy(c => c.CategoryName).ToListAsync();
+            ViewBag.Sizes = await _context.Sizes.OrderBy(s => s.SizeName).ToListAsync();
+            ViewBag.Teams = await _context.Teams.OrderBy(t => t.TeamName).ToListAsync();
+
+            return View(updatedMerchandise);
+        }
+
+        // Перегляд усіх замовлень (Admin)
+        [Authorize(Roles = "Admin")]
+        [Route("/Admin/Orders")]
+        public async Task<IActionResult> AdminOrders()
+        {
+            var orders = await _context.MerchOrders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Merch)
+                .Include(o => o.Status)
+                .OrderByDescending(o => o.OrderDate)
+                .ToListAsync();
+
+            return View("~/Views/Admin/Orders.cshtml", orders);
+        }
+
+        // Перегляд усіх товарів (Admin)
+        [Authorize(Roles = "Admin")]
+        [Route("/Admin/Merchandises")]
+        public async Task<IActionResult> AdminMerchandises()
+        {
+            var merchandises = await _context.Merchandises
+                .Include(m => m.Brand)
+                .Include(m => m.Category)
+                .Include(m => m.Size)
+                .Include(m => m.Team)
+                .OrderBy(m => m.Name)
+                .ToListAsync();
+
+            return View("~/Views/Admin/Merchandises.cshtml", merchandises);
+        }
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var merchandise = await _context.Merchandises
+                .Include(m => m.Brand)
+                .Include(m => m.Category)
+                .Include(m => m.Size)
+                .Include(m => m.Team)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (merchandise == null)
+            {
+                return NotFound();
+            }
+
+            return View(merchandise);
+        }
+
+        // Нова дія для видалення товару (POST)
+        [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var merchandise = await _context.Merchandises.FindAsync(id);
+            if (merchandise != null)
+            {
+                _context.Merchandises.Remove(merchandise);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(AdminMerchandises));
+        }
+
+
+        private bool MerchandiseExists(int id)
+        {
+            return _context.Merchandises.Any(e => e.Id == id);
         }
     }
 }

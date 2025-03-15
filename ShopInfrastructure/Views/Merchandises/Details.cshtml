@@ -28,6 +28,10 @@
 
             <a asp-action="Index" class="btn btn-secondary mt-3">Назад до списку</a>
             <button class="btn btn-primary mt-3 add-to-cart" data-merchandise-id="@Model.Id">Додати в кошик</button>
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning mt-3">Редагувати</a>
+            }
         </div>
     </div>
 </div>
@@ -38,8 +42,8 @@
     }
 
     .img-fluid {
-        border: 1px solid #ddd; /* Додано рамку для зображення */
-        border-radius: 5px; /* Закруглені кути */
+        border: 1px solid #ddd;
+        border-radius: 5px;
     }
 </style>
 
@@ -53,6 +57,13 @@
             const button = event.target;
             const merchandiseId = parseInt(button.getAttribute('data-merchandise-id'));
             const userId = '@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value';
+
+            // Перевіряємо, чи користувач автентифікований
+            if (!userId) {
+                alert('Будь ласка, увійдіть у систему, щоб додати товар до кошика.');
+                window.location.href = '/Account/Login';
+                return;
+            }
 
             fetch('/api/Cart/add', {
                 method: 'POST',
@@ -70,11 +81,14 @@
             })
             .then(data => {
                 alert(data.message);
-                updateCartCount();
+                // Оновлюємо лічильник кошика, якщо функція визначена
+                if (typeof updateCartCount === 'function') {
+                    updateCartCount();
+                }
             })
             .catch(error => {
                 console.error('Error adding to cart:', error);
-                alert('Не вдалося додати товар до кошика.');
+                alert('Не вдалося додати товар до кошика. Спробуйте ще раз.');
             });
         }
     </script>
