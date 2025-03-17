@@ -75,6 +75,8 @@ namespace ShopInfrastructure.Controllers
 
             if (result.Succeeded)
             {
+                // Додаємо роль "User" новому користувачу
+                await _userManager.AddToRoleAsync(user, "User");
                 await _signInManager.SignInAsync(user, isPersistent: false);
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {

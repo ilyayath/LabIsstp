@@ -2,28 +2,51 @@
 
 <div class="container mt-5">
     <h2 class="text-center mb-4">Ваш профіль</h2>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <form asp-action="Update" method="post">
-                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="Update" method="post">
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-                <div class="form-group mb-3">
-                    <label class="form-label">Email</label>
-                    <input class="form-control" value="@Model.Email" disabled />
-                    <small class="form-text text-muted">Email не можна змінити.</small>
-                </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label">Email</label>
+                            <input class="form-control" value="@Model.Email" disabled />
+                            <small class="form-text text-muted">Email не можна змінити.</small>
+                        </div>
 
-                <div class="form-group mb-3">
-                    <label asp-for="FullName" class="form-label">Повне ім’я</label>
-                    <input asp-for="FullName" class="form-control" placeholder="Введіть ваше ім’я" />
-                    <span asp-validation-for="FullName" class="text-danger"></span>
-                </div>
+                        <div class="form-group mb-3">
+                            <label asp-for="FullName" class="form-label">Повне ім’я</label>
+                            <input asp-for="FullName" class="form-control" placeholder="Введіть ваше ім’я" />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
 
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-login">Зберегти зміни</button>
-                    <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">На головну</a>
+                        <div class="form-group mb-3">
+                            <label asp-for="PhoneNumber" class="form-label">Номер телефону</label>
+                            <input asp-for="PhoneNumber" class="form-control" placeholder="Введіть номер телефону" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label">Ролі</label>
+                            <input class="form-control" value="@string.Join(", ", Model.Roles)" disabled />
+                            <small class="form-text text-muted">Ваші поточні ролі в системі.</small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+                            <a asp-action="ChangePassword" asp-controller="Profile" class="btn btn-outline-primary">Змінити пароль</a>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">На головну</a>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>

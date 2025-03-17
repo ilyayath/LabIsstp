@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ShopDomain.Models;
-using ShopInfrastructure;
 using ShopMVC.ShopInfrastructure;
 using System.Text;
 
@@ -34,29 +33,34 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Налаштування аутентифікації
-builder.Services.AddAuthentication()
-    .AddJwtBearer(options =>
+// Налаштування аутентифікації з явною схемою
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.RequireHttpsMetadata = false;
-        options.SaveToken = true;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-        };
-    })
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/Account/Login";
-        options.LogoutPath = "/Account/Logout";
-        options.AccessDeniedPath = "/Account/AccessDenied";
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+})
+.AddCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+});
 
 // Додаємо підтримку MVC та API
 builder.Services.AddControllersWithViews();
@@ -110,6 +114,24 @@ using (var scope = app.Services.CreateScope())
         adminUser = new AppUser { UserName = adminEmail, Email = adminEmail };
         await userManager.CreateAsync(adminUser, "Admin123!");
         await userManager.AddToRoleAsync(adminUser, "Admin");
+    }
+
+    // Перевіряємо і додаємо звичайного користувача
+    var userEmail = "user@example.com";
+    var regularUser = await userManager.FindByEmailAsync(userEmail);
+    if (regularUser == null)
+    {
+        regularUser = new AppUser { UserName = userEmail, Email = userEmail };
+        await userManager.CreateAsync(regularUser, "User123!");
+        await userManager.AddToRoleAsync(regularUser, "User");
+    }
+    else
+    {
+        var roles = await userManager.GetRolesAsync(regularUser);
+        if (!roles.Contains("User"))
+        {
+            await userManager.AddToRoleAsync(regularUser, "User");
+        }
     }
 }
 

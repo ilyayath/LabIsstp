@@ -17,19 +17,43 @@
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="heading_@order.Id">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@order.Id" aria-expanded="false" aria-controls="collapse_@order.Id">
-                            Замовлення #@order.Id від @(order.OrderDate?.ToString("dd.MM.yyyy") ?? "Невідомо") -
+                            Замовлення #@order.Id від @(order.OrderDate?.ToString("dd.MM.yyyy HH:mm") ?? "Невідомо") -
                             @(order.OrderItems.Sum(oi => oi.Merch.Price * oi.Quantity).ToString("C"))
                             (@(order.Status?.StatusName ?? "Невідомий статус"))
                         </button>
                     </h2>
                     <div id="collapse_@order.Id" class="accordion-collapse collapse" aria-labelledby="heading_@order.Id" data-bs-parent="#ordersAccordion">
                         <div class="accordion-body">
-                            <table class="table table-striped">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Користувач:</strong> @order.UserId</p>
+                                    <p><strong>Дата замовлення:</strong> @(order.OrderDate?.ToString("dd.MM.yyyy HH:mm") ?? "Невідомо")</p>
+                                    <p><strong>Статус:</strong> @(order.Status?.StatusName ?? "Невідомий")</p>
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <form asp-action="UpdateStatus" asp-controller="Merchandises" asp-route-id="@order.Id" method="post" class="mt-3">
+                                            <div class="input-group">
+                                                <select name="statusId" class="form-select" onchange="this.form.submit()">
+                                                    @foreach (var status in ViewBag.OrderStatuses)
+                                                    {
+                                                        <option value="@status.Id" selected="@(order.StatusId == status.Id ? "selected" : null)">@status.StatusName</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        </form>
+                                    }
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Загальна сума:</strong> @(order.OrderItems.Sum(oi => oi.Merch.Price * oi.Quantity).ToString("C"))</p>
+                                    <p><strong>Кількість позицій:</strong> @order.OrderItems.Count</p>
+                                </div>
+                            </div>
+                            <table class="table table-striped mt-3">
                                 <thead>
                                     <tr>
                                         <th>Товар</th>
                                         <th>Кількість</th>
-                                        <th>Ціна</th>
+                                        <th>Ціна за одиницю</th>
                                         <th>Сума</th>
                                     </tr>
                                 </thead>
@@ -37,14 +61,22 @@
                                     @foreach (var item in order.OrderItems)
                                     {
                                         <tr>
-                                            <td>@item.Merch.Name</td>
+                                            <td>
+                                                <a asp-controller="Merchandises" asp-action="Details" asp-route-id="@item.MerchId">@item.Merch.Name</a>
+                                            </td>
                                             <td>@item.Quantity</td>
                                             <td>@item.Merch.Price.ToString("C")</td>
-                                            <td>@(item.Merch.Price * item.Quantity).ToString("C")</td>
+                                            <td>@((item.Merch.Price * item.Quantity).ToString("C"))</td>
                                         </tr>
                                     }
                                 </tbody>
                             </table>
+                            @if (order.Status?.StatusName == "Pending" || order.Status?.StatusName == "Processing")
+                            {
+                                <form asp-action="CancelOrder" asp-controller="Merchandises" asp-route-id="@order.Id" method="post" class="mt-3">
+                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Ви впевнені, що хочете скасувати замовлення?');">Скасувати замовлення</button>
+                                </form>
+                            }
                         </div>
                     </div>
                 </div>
