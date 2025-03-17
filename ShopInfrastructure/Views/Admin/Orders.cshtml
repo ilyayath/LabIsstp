@@ -1,30 +1,59 @@
 ﻿@model List<ShopDomain.Models.MerchOrder>
 
 <div class="container mt-5">
-    <h2 class="text-center mb-4">Мої замовлення</h2>
-    @if (Model == null || !Model.Any())
+    <h2 class="text-center mb-4">Адмін: Замовлення</h2>
+    @if (TempData["SuccessMessage"] != null)
     {
-        <p class="text-center">У вас поки немає замовлень.</p>
-        <div class="text-center">
-            <a asp-controller="Merchandises" asp-action="Index" class="btn btn-primary">Перейти до покупок</a>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+    }
+    @if (!Model.Any())
+    {
+        <p class="text-center">Замовлень поки немає.</p>
     }
     else
     {
-        <div class="accordion" id="ordersAccordion">
-            @foreach (var order in Model)
-            {
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading_@order.Id">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@order.Id" aria-expanded="false" aria-controls="collapse_@order.Id">
-                            Замовлення #@order.Id від @(order.OrderDate?.ToString("dd.MM.yyyy") ?? "Невідомо") -
-                            @(order.OrderItems.Sum(oi => oi.Merch.Price * oi.Quantity).ToString("C"))
-                            (@(order.Status?.StatusName ?? "Невідомий статус"))
-                        </button>
-                    </h2>
-                    <div id="collapse_@order.Id" class="accordion-collapse collapse" aria-labelledby="heading_@order.Id" data-bs-parent="#ordersAccordion">
-                        <div class="accordion-body">
-                            <table class="table table-striped">
+        <table class="table table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#ID</th>
+                    <th>Користувач</th>
+                    <th>Дата</th>
+                    <th>Сума</th>
+                    <th>Статус</th>
+                    <th>Дії</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model)
+                {
+                    <tr>
+                        <td>@order.Id</td>
+                        <td>@(order.User?.Email ?? "Невідомо")</td>
+                        <td>@(order.OrderDate?.ToString("dd.MM.yyyy HH:mm") ?? "Невідомо")</td>
+                        <td>@order.OrderItems.Sum(oi => oi.Merch.Price * oi.Quantity).ToString("C")</td>
+                        <td>
+                            <form asp-action="UpdateOrderStatus" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@order.Id" />
+                                <select name="statusId" class="form-select" onchange="this.form.submit()">
+                                    @foreach (var status in ViewBag.OrderStatuses)
+                                    {
+                                        <option value="@status.Id" selected="@(order.StatusId == status.Id)">@status.StatusName</option>
+                                    }
+                                </select>
+                            </form>
+                        </td>
+                        <td>
+                            <button class="btn btn-info btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#details_@order.Id" aria-expanded="false">
+                                Деталі
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="details_@order.Id">
+                        <td colspan="6">
+                            <table class="table table-bordered mb-0">
                                 <thead>
                                     <tr>
                                         <th>Товар</th>
@@ -37,29 +66,18 @@
                                     @foreach (var item in order.OrderItems)
                                     {
                                         <tr>
-                                            <td>
-                                                <a asp-controller="Merchandises" asp-action="Details" asp-route-id="@item.MerchId">@item.Merch.Name</a>
-                                            </td>
+                                            <td>@item.Merch.Name</td>
                                             <td>@item.Quantity</td>
                                             <td>@item.Merch.Price.ToString("C")</td>
-                                            <td>@(item.Merch.Price * item.Quantity).ToString("C")</td>
+                                            <td>@((item.Merch.Price * item.Quantity).ToString("C"))</td>
                                         </tr>
                                     }
                                 </tbody>
                             </table>
-                            @if (order.Status?.StatusName == "Pending" || order.Status?.StatusName == "Processing")
-                            {
-                                <form asp-action="CancelOrder" asp-controller="Merchandises" asp-route-id="@order.Id" method="post" class="mt-3">
-                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Ви впевнені, що хочете скасувати замовлення?');">Скасувати замовлення</button>
-                                </form>
-                            }
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-        <div class="text-center mt-4">
-            <a asp-controller="Merchandises" asp-action="Index" class="btn btn-secondary">Повернутися до покупок</a>
-        </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     }
 </div>

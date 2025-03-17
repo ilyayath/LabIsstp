@@ -1,0 +1,60 @@
+﻿@model List<ShopDomain.Models.UserRolesViewModel>
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Керування ролями</h2>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (!Model.Any())
+    {
+        <p class="text-center">Немає користувачів для керування.</p>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Поточна роль</th>
+                    <th>Змінити роль</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    <tr>
+                        <td>@user.Email</td>
+                        <td>@(user.Roles.FirstOrDefault() ?? "Немає ролі")</td>
+                        <td>
+                            <form asp-action="UpdateUserRole" method="post" class="d-inline">
+                                <input type="hidden" name="userId" value="@user.UserId" />
+                                <select name="role" class="form-select d-inline w-auto">
+                                    <option value="">Виберіть роль</option>
+                                    @foreach (var role in ViewBag.AllRoles)
+                                    {
+                                        <option value="@role" selected="@(user.Roles.Contains(role))">@role</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-primary btn-sm">Зберегти</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <div class="text-center mt-3">
+        <a asp-controller="Merchandises" asp-action="Index" class="btn btn-secondary">Назад до товарів</a>
+    </div>
+</div>

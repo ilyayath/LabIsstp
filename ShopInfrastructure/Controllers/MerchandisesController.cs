@@ -449,6 +449,23 @@ namespace ShopInfrastructure.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateOrderStatus(int id, int statusId)
+        {
+            var order = await _context.MerchOrders.FindAsync(id);
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            order.StatusId = statusId;
+            _context.Update(order);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Статус замовлення #{id} оновлено.";
+            return RedirectToAction("Orders");
+        }
+        [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateStatus(int id, int statusId)
         {
@@ -482,9 +499,11 @@ namespace ShopInfrastructure.Controllers
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Merch)
                 .Include(o => o.Status)
+                .Include(o => o.User)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
 
+            ViewBag.OrderStatuses = await _context.OrderStatuses.ToListAsync(); // Передаємо статуси
             return View("~/Views/Admin/Orders.cshtml", orders);
         }
 
