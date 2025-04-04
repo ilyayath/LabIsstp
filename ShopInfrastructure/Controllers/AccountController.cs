@@ -42,7 +42,7 @@ namespace ShopInfrastructure.Controllers
 
                 if (result.Succeeded)
                 {
-                    await _userManager.AddToRoleAsync(user, "User"); // За замовчуванням додаємо роль User
+                    await _userManager.AddToRoleAsync(user, "User"); 
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     return RedirectToAction("Index", "Merchandises");
                 }
@@ -104,7 +104,7 @@ namespace ShopInfrastructure.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return View(model);
+                return View("~/Views/Account/ChangePassword.cshtml", model);
             }
 
             var user = await _userManager.GetUserAsync(User);
@@ -118,14 +118,14 @@ namespace ShopInfrastructure.Controllers
             {
                 await _signInManager.RefreshSignInAsync(user);
                 TempData["SuccessMessage"] = "Пароль успішно змінено!";
-                return RedirectToAction("Profile");
+                return RedirectToAction("Profile"); 
             }
 
             foreach (var error in result.Errors)
             {
                 ModelState.AddModelError(string.Empty, error.Description);
             }
-            return View(model);
+            return View("~/Views/Account/ChangePassword.cshtml", model);
         }
 
         // Профіль користувача (GET)
@@ -146,7 +146,7 @@ namespace ShopInfrastructure.Controllers
                 PhoneNumber = user.PhoneNumber,
                 Roles = await _userManager.GetRolesAsync(user)
             };
-            return View(model);
+            return View("~/Views/Profile/Index.cshtml", model);
         }
 
         // Керування ролями (GET) - лише для адміністраторів
@@ -156,7 +156,7 @@ namespace ShopInfrastructure.Controllers
         {
             var currentUser = await _userManager.GetUserAsync(User);
             var users = await _userManager.Users
-                .Where(u => u.Id != currentUser.Id) // Виключаємо поточного користувача
+                .Where(u => u.Id != currentUser.Id) 
                 .ToListAsync();
             var model = new List<UserRolesViewModel>();
 
@@ -166,7 +166,7 @@ namespace ShopInfrastructure.Controllers
                 {
                     UserId = user.Id,
                     Email = user.Email,
-                    Roles = await _userManager.GetRolesAsync(user) // Очікуємо одну роль
+                    Roles = await _userManager.GetRolesAsync(user) 
                 });
             }
 

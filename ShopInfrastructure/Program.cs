@@ -8,11 +8,11 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Підключення до бази даних
+
 builder.Services.AddDbContext<MerchShopeContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Налаштування Identity
+
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
@@ -24,7 +24,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
     .AddEntityFrameworkStores<MerchShopeContext>()
     .AddDefaultTokenProviders();
 
-// Налаштування сесії
+
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -33,7 +33,7 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Налаштування аутентифікації з явною схемою
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
@@ -62,7 +62,7 @@ builder.Services.AddAuthentication(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
-// Додаємо підтримку MVC та API
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -70,7 +70,7 @@ builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// Налаштування проміжного ПЗ
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -90,13 +90,13 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Створюємо ролі та адміністратора
+
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
-    // Створюємо ролі
+
     string[] roleNames = { "Admin", "User" };
     foreach (var roleName in roleNames)
     {
@@ -106,7 +106,7 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // Створюємо адміністратора
+
     var adminEmail = "admin@example.com";
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)

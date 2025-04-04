@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ClosedXML.Excel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,14 +16,14 @@ namespace ShopInfrastructure.Controllers
         private readonly MerchShopeContext _context;
         private readonly UserManager<AppUser> _userManager;
 
-        // Виправлено конструктор: передаємо UserManager як параметр
+
         public MerchandisesController(MerchShopeContext context, UserManager<AppUser> userManager)
         {
             _context = context;
-            _userManager = userManager; // Присвоюємо параметр полю
+            _userManager = userManager; 
         }
 
-        // Перегляд замовлень користувача
+
         [Authorize(Roles = "User,Admin")]
         public async Task<IActionResult> Orders()
         {
@@ -40,7 +41,7 @@ namespace ShopInfrastructure.Controllers
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
 
-            // Передаємо статуси у ViewBag для адміністратора
+
             if (User.IsInRole("Admin"))
             {
                 ViewBag.OrderStatuses = await _context.OrderStatuses.ToListAsync();
@@ -49,7 +50,7 @@ namespace ShopInfrastructure.Controllers
             return View(orders);
         }
 
-        // Перегляд кошика користувача
+
         [Authorize(Roles = "User,Admin")]
         public async Task<IActionResult> Cart()
         {
@@ -67,7 +68,7 @@ namespace ShopInfrastructure.Controllers
             return View(cartItems);
         }
 
-        // Список товарів для всіх
+
         public async Task<IActionResult> Index(string searchString = "", int[] brandIds = null, int[] categoryIds = null, int[] sizeIds = null, int[] teamIds = null, decimal? minPrice = null, decimal? maxPrice = null, bool clearFilters = false)
         {
             if (clearFilters)
@@ -128,7 +129,11 @@ namespace ShopInfrastructure.Controllers
             return View(result);
         }
 
-        // Деталі товару
+        [Authorize(Roles = "Admin")] 
+        public IActionResult Charts()
+        {
+            return View();
+        }
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -180,7 +185,7 @@ namespace ShopInfrastructure.Controllers
         {
             if (!ModelState.IsValid)
             {
-                // Якщо валідація не пройшла, повторно завантажуємо MerchandiseName для відображення
+                
                 var merchandise = await _context.Merchandises.FindAsync(model.MerchandiseId);
                 if (merchandise != null)
                 {
@@ -265,7 +270,7 @@ namespace ShopInfrastructure.Controllers
                 MerchandiseId = merchandiseId,
                 Rating = rating,
                 Comment = comment,
-                ReviewDate = DateTime.Now // Змінено з DateTime.UtcNow на DateTime.Now
+                ReviewDate = DateTime.Now 
             };
 
             _context.Reviews.Add(review);
@@ -273,7 +278,7 @@ namespace ShopInfrastructure.Controllers
 
             return RedirectToAction("Details", new { id = merchandiseId });
         }
-        // Решта методів залишаються без змін
+      
         [Authorize(Roles = "User,Admin")]
         public async Task<IActionResult> PlaceOrder()
         {
@@ -357,7 +362,7 @@ namespace ShopInfrastructure.Controllers
                 {
                     MerchId = ci.MerchandiseId,
                     Quantity = ci.Quantity,
-                    Price = ci.Merchandise.Price, // Використовуємо актуальну ціну з товару
+                    Price = ci.Merchandise.Price, 
                     Merch = ci.Merchandise
                 }).ToList()
             };
@@ -506,7 +511,115 @@ namespace ShopInfrastructure.Controllers
             ViewBag.OrderStatuses = await _context.OrderStatuses.ToListAsync(); // Передаємо статуси
             return View("~/Views/Admin/Orders.cshtml", orders);
         }
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> ExportOrdersToExcel()
+        {
+            var orders = await _context.MerchOrders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Merch)
+                .Include(o => o.Status)
+                .Include(o => o.User)
+                .OrderByDescending(o => o.OrderDate)
+                .ToListAsync();
 
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Orders");
+                var currentRow = 1;
+
+                // Заголовки
+                worksheet.Cell(currentRow, 1).Value = "ID";
+                worksheet.Cell(currentRow, 2).Value = "Користувач";
+                worksheet.Cell(currentRow, 3).Value = "Дата";
+                worksheet.Cell(currentRow, 4).Value = "Сума";
+                worksheet.Cell(currentRow, 5).Value = "Статус";
+                worksheet.Cell(currentRow, 6).Value = "Товари";
+
+                // Стилі для заголовків
+                worksheet.Row(currentRow).Style.Font.Bold = true;
+
+                // Дані
+                foreach (var order in orders)
+                {
+                    currentRow++;
+                    worksheet.Cell(currentRow, 1).Value = order.Id;
+                    worksheet.Cell(currentRow, 2).Value = order.User?.Email ?? "Невідомо";
+                    worksheet.Cell(currentRow, 3).Value = order.OrderDate?.ToString("dd.MM.yyyy HH:mm") ?? "Невідомо";
+                    worksheet.Cell(currentRow, 4).Value = order.OrderItems.Sum(oi => oi.Merch.Price * oi.Quantity);
+                    worksheet.Cell(currentRow, 5).Value = order.Status?.StatusName ?? "Невідомо";
+                    worksheet.Cell(currentRow, 6).Value = string.Join(", ", order.OrderItems.Select(oi => $"{oi.Merch.Name} (x{oi.Quantity})"));
+                }
+
+                // Автонастройка ширини колонок
+                worksheet.Columns().AdjustToContents();
+
+                // Збереження файлу в пам’ять
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    var content = stream.ToArray();
+                    return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "OrdersReport.xlsx");
+                }
+            }
+        }
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public IActionResult ImportMerchandises()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public async Task<IActionResult> ImportMerchandises(IFormFile excelFile)
+        {
+            if (excelFile == null || excelFile.Length == 0)
+            {
+                ModelState.AddModelError("", "Будь ласка, виберіть файл Excel.");
+                return View();
+            }
+
+            if (!excelFile.FileName.EndsWith(".xlsx"))
+            {
+                ModelState.AddModelError("", "Файл має бути у форматі .xlsx.");
+                return View();
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                await excelFile.CopyToAsync(stream);
+                using (var workbook = new XLWorkbook(stream))
+                {
+                    var worksheet = workbook.Worksheet(1);
+                    var rowCount = worksheet.RowsUsed().Count();
+
+                    for (int row = 2; row <= rowCount; row++) // Починаємо з 2, бо 1-й рядок — заголовки
+                    {
+                        var merchandise = new Merchandise
+                        {
+                            Name = worksheet.Cell(row, 1).GetString(),
+                            Price = worksheet.Cell(row, 2).GetValue<decimal>(),
+                            ImageUrl = worksheet.Cell(row, 3).GetString(),
+                            BrandId = worksheet.Cell(row, 4).GetValue<int>(),
+                            CategoryId = worksheet.Cell(row, 5).GetValue<int>(),
+                            SizeId = worksheet.Cell(row, 6).GetValue<int>(),
+                            TeamId = worksheet.Cell(row, 7).GetValue<int>(),
+                        };
+
+                        // Перевірка, чи існує запис із таким же ім’ям
+                        if (!_context.Merchandises.Any(m => m.Name == merchandise.Name))
+                        {
+                            _context.Merchandises.Add(merchandise);
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = "Товари успішно імпортовано!";
+                    return RedirectToAction("AdminMerchandises");
+                }
+            }
+        }
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CancelOrder(int id)

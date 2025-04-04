@@ -56,7 +56,7 @@ namespace ShopInfrastructure.Controllers
             }
 
             user.FullName = model.FullName;
-            user.PhoneNumber = model.PhoneNumber; // Додаємо оновлення номера телефону
+            user.PhoneNumber = model.PhoneNumber; 
             var result = await _userManager.UpdateAsync(user);
 
             if (result.Succeeded)
@@ -98,7 +98,7 @@ namespace ShopInfrastructure.Controllers
             var result = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
             if (result.Succeeded)
             {
-                await _signInManager.RefreshSignInAsync(user); // Оновлюємо сесію
+                await _signInManager.RefreshSignInAsync(user); 
                 TempData["SuccessMessage"] = "Пароль успішно змінено!";
                 return RedirectToAction("Index");
             }

@@ -5,10 +5,10 @@
 }
 
 <div class="container mt-5">
-    <h2 class="text-center mb-4">Усі товари</h2>
-
-    <div class="mb-3">
-        <a asp-action="Create" asp-controller="Merchandises" class="btn btn-success">Додати товар</a>
+    <h2 class="text-center mb-4">Адмін: Товари</h2>
+    <div class="mb-3 text-center">
+        <a asp-action="Create" class="btn btn-primary">Додати товар</a>
+        <a asp-action="ImportMerchandises" class="btn btn-success">Імпортувати з Excel</a>
     </div>
 
     @if (Model.Any())

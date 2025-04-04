@@ -1,0 +1,49 @@
+﻿@{
+    ViewData["Title"] = "Діаграми";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Діаграми</h2>
+
+
+    <div id="ordersChart" style="width: 100%; height: 400px;"></div>
+
+    <div id="categoryChart" style="width: 100%; height: 400px;"></div>
+</div>
+
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+    google.charts.load('current', { 'packages': ['corechart'] });
+    google.charts.setOnLoadCallback(drawCharts);
+
+    function drawCharts() {
+
+        fetch('/api/ChartsApi/orders-by-year')
+            .then(response => response.json())
+            .then(data => {
+                var dataTable = google.visualization.arrayToDataTable(data);
+                var options = {
+                    title: 'Кількість замовлень за роками',
+                    hAxis: { title: 'Рік' },
+                    vAxis: { title: 'Кількість замовлень', minValue: 0 },
+                    legend: { position: 'none' }
+                };
+                var chart = new google.visualization.ColumnChart(document.getElementById('ordersChart'));
+                chart.draw(dataTable, options);
+            });
+
+
+        fetch('/api/ChartsApi/merch-by-category')
+            .then(response => response.json())
+            .then(data => {
+                var dataTable = google.visualization.arrayToDataTable(data);
+                var options = {
+                    title: 'Розподіл товарів за категоріями',
+                    pieHole: 0.4,
+                };
+                var chart = new google.visualization.PieChart(document.getElementById('categoryChart'));
+                chart.draw(dataTable, options);
+            });
+    }
+</script>
