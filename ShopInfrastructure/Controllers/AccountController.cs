@@ -42,7 +42,7 @@ namespace ShopInfrastructure.Controllers
 
                 if (result.Succeeded)
                 {
-                    await _userManager.AddToRoleAsync(user, "User"); 
+                    await _userManager.AddToRoleAsync(user, "User");
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     return RedirectToAction("Index", "Merchandises");
                 }
@@ -88,67 +88,6 @@ namespace ShopInfrastructure.Controllers
             return RedirectToAction("Index", "Merchandises");
         }
 
-        // Зміна пароля (GET)
-        [Authorize]
-        [HttpGet]
-        public IActionResult ChangePassword()
-        {
-            return View();
-        }
-
-        // Зміна пароля (POST)
-        [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View("~/Views/Account/ChangePassword.cshtml", model);
-            }
-
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                return RedirectToAction("Login");
-            }
-
-            var result = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
-            if (result.Succeeded)
-            {
-                await _signInManager.RefreshSignInAsync(user);
-                TempData["SuccessMessage"] = "Пароль успішно змінено!";
-                return RedirectToAction("Profile"); 
-            }
-
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
-            return View("~/Views/Account/ChangePassword.cshtml", model);
-        }
-
-        // Профіль користувача (GET)
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> Profile()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                return RedirectToAction("Login");
-            }
-
-            var model = new ProfileViewModel
-            {
-                FullName = user.FullName,
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
-                Roles = await _userManager.GetRolesAsync(user)
-            };
-            return View("~/Views/Profile/Index.cshtml", model);
-        }
-
         // Керування ролями (GET) - лише для адміністраторів
         [Authorize(Roles = "Admin")]
         [HttpGet]
@@ -156,7 +95,7 @@ namespace ShopInfrastructure.Controllers
         {
             var currentUser = await _userManager.GetUserAsync(User);
             var users = await _userManager.Users
-                .Where(u => u.Id != currentUser.Id) 
+                .Where(u => u.Id != currentUser.Id)
                 .ToListAsync();
             var model = new List<UserRolesViewModel>();
 
@@ -166,7 +105,7 @@ namespace ShopInfrastructure.Controllers
                 {
                     UserId = user.Id,
                     Email = user.Email,
-                    Roles = await _userManager.GetRolesAsync(user) 
+                    Roles = await _userManager.GetRolesAsync(user)
                 });
             }
 
@@ -187,20 +126,17 @@ namespace ShopInfrastructure.Controllers
                 return RedirectToAction("ManageRoles");
             }
 
-            // Видаляємо всі існуючі ролі
             var currentRoles = await _userManager.GetRolesAsync(user);
             if (currentRoles.Any())
             {
                 await _userManager.RemoveFromRolesAsync(user, currentRoles);
             }
 
-            // Додаємо нову роль
             if (!await _roleManager.RoleExistsAsync(role))
             {
                 await _roleManager.CreateAsync(new IdentityRole(role));
             }
-            var result = await _userManager.AddToRoleAsync(user, role);
-
+            await _userManager.AddToRoleAsync(user, role);
 
             return RedirectToAction("ManageRoles");
         }

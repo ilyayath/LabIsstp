@@ -4,18 +4,27 @@
     <h2 class="text-center mb-4">Профіль</h2>
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     }
     <div class="row justify-content-center">
         <div class="col-md-6">
             <p><strong>Повне ім’я:</strong> @Model.FullName</p>
             <p><strong>Email:</strong> @Model.Email</p>
             <p><strong>Телефон:</strong> @(Model.PhoneNumber ?? "Не вказано")</p>
+            <p><strong>Країна:</strong> @(Model.Country ?? "Не вказано")</p>
+            <p><strong>Дата народження:</strong> @(Model.BirthDate?.ToString("dd.MM.yyyy") ?? "Не вказано")</p>
+            <p><strong>Адреса доставки:</strong> @(Model.ShippingAddress ?? "Не вказано")</p>
             <p><strong>Ролі:</strong> @(Model.Roles != null && Model.Roles.Any() ? string.Join(", ", Model.Roles) : "Немає ролей")</p>
-            <a asp-action="ChangePassword" asp-controller="Account" class="btn btn-primary">Змінити пароль</a>
-            <form asp-action="Logout" asp-controller="Account" method="post" class="d-inline">
-                <button type="submit" class="btn btn-danger">Вийти</button>
-            </form>
+            <div class="text-center">
+                <a asp-action="Edit" asp-controller="Profile" class="btn btn-primary">Редагувати профіль</a>
+                <a asp-action="ChangePassword" asp-controller="Profile" class="btn btn-secondary">Змінити пароль</a>
+                <form asp-action="Logout" asp-controller="Account" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Вийти</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>

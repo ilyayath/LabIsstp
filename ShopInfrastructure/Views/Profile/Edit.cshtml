@@ -1,0 +1,58 @@
+﻿@model ShopDomain.Models.ProfileViewModel
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Редагування профілю</h2>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <form asp-action="Edit" asp-controller="Profile" method="post">
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="FullName" class="form-label">Повне ім’я</label>
+                    <input asp-for="FullName" class="form-control" />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Email" class="form-label">Email</label>
+                    <p class="form-control-plaintext">@Model.Email</p> <!-- Тільки відображення -->
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="PhoneNumber" class="form-label">Телефон</label>
+                    <input asp-for="PhoneNumber" class="form-control" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Country" class="form-label">Країна</label>
+                    <select asp-for="Country" class="form-select" asp-items="@(new SelectList(ViewBag.Countries))">
+                        <option value="">Виберіть країну</option>
+                    </select>
+                    <span asp-validation-for="Country" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="BirthDate" class="form-label">Дата народження</label>
+                    <input asp-for="BirthDate" class="form-control" type="date" />
+                    <span asp-validation-for="BirthDate" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="ShippingAddress" class="form-label">Адреса доставки</label>
+                    <textarea asp-for="ShippingAddress" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="ShippingAddress" class="text-danger"></span>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Зберегти</button>
+                    <a asp-action="Index" asp-controller="Profile" class="btn btn-secondary">Назад</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

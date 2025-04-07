@@ -9,13 +9,15 @@ namespace ShopDomain.Models
         [StringLength(100, ErrorMessage = "Ім’я не може бути довшим за 100 символів")]
         public string FullName { get; set; }
 
-        [EmailAddress]
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         [Phone(ErrorMessage = "Невірний формат номера телефону")]
-        public string PhoneNumber { get; set; }
-
-        public IList<string> Roles { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Country { get; set; } // Місце проживання
+        [DataType(DataType.Date)]
+        public DateTime? BirthDate { get; set; } // Дата народження
+        public string? ShippingAddress { get; set; } // Адреса доставки
+        public IList<string>? Roles { get; set; }
     }
     public class RegisterViewModel
     {
