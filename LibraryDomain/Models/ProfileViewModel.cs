@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace ShopDomain.Models
@@ -71,4 +72,5 @@ namespace ShopDomain.Models
         public string Email { get; set; }
         public IList<string> Roles { get; set; }
     }
+
 }

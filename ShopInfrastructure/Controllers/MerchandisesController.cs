@@ -586,6 +586,10 @@ namespace ShopInfrastructure.Controllers
                 return View();
             }
 
+            int addedCount = 0;
+            int skippedCount = 0;
+            var errors = new List<string>();
+
             using (var stream = new MemoryStream())
             {
                 await excelFile.CopyToAsync(stream);
@@ -594,28 +598,83 @@ namespace ShopInfrastructure.Controllers
                     var worksheet = workbook.Worksheet(1);
                     var rowCount = worksheet.RowsUsed().Count();
 
-                    for (int row = 2; row <= rowCount; row++) // Починаємо з 2, бо 1-й рядок — заголовки
+                    for (int row = 2; row <= rowCount; row++) 
                     {
-                        var merchandise = new Merchandise
+                        try
                         {
-                            Name = worksheet.Cell(row, 1).GetString(),
-                            Price = worksheet.Cell(row, 2).GetValue<decimal>(),
-                            ImageUrl = worksheet.Cell(row, 3).GetString(),
-                            BrandId = worksheet.Cell(row, 4).GetValue<int>(),
-                            CategoryId = worksheet.Cell(row, 5).GetValue<int>(),
-                            SizeId = worksheet.Cell(row, 6).GetValue<int>(),
-                            TeamId = worksheet.Cell(row, 7).GetValue<int>(),
-                        };
+                            var name = worksheet.Cell(row, 1).GetString();
+                            var brandId = worksheet.Cell(row, 4).GetValue<int>();
+                            var categoryId = worksheet.Cell(row, 5).GetValue<int>();
+                            var sizeId = worksheet.Cell(row, 6).GetValue<int>();
+                            var teamId = worksheet.Cell(row, 7).GetValue<int>();
 
-                        // Перевірка, чи існує запис із таким же ім’ям
-                        if (!_context.Merchandises.Any(m => m.Name == merchandise.Name))
-                        {
+                            
+                            if (!await _context.Brands.AnyAsync(b => b.Id == brandId))
+                            {
+                                errors.Add($"Рядок {row}: BrandId {brandId} не існує.");
+                                skippedCount++;
+                                continue;
+                            }
+                            if (!await _context.Categories.AnyAsync(c => c.Id == categoryId))
+                            {
+                                errors.Add($"Рядок {row}: CategoryId {categoryId} не існує.");
+                                skippedCount++;
+                                continue;
+                            }
+                            if (!await _context.Sizes.AnyAsync(s => s.Id == sizeId))
+                            {
+                                errors.Add($"Рядок {row}: SizeId {sizeId} не існує.");
+                                skippedCount++;
+                                continue;
+                            }
+                            if (!await _context.Teams.AnyAsync(t => t.Id == teamId))
+                            {
+                                errors.Add($"Рядок {row}: TeamId {teamId} не існує.");
+                                skippedCount++;
+                                continue;
+                            }
+
+                            
+                            var existingMerchandise = await _context.Merchandises
+                                .FirstOrDefaultAsync(m => m.Name == name);
+
+                            if (existingMerchandise != null)
+                            {
+                                skippedCount++; 
+                                continue;
+                            }
+
+                            var merchandise = new Merchandise
+                            {
+                                Name = name,
+                                Price = worksheet.Cell(row, 2).GetValue<decimal>(),
+                                ImageUrl = worksheet.Cell(row, 3).GetString(),
+                                BrandId = brandId,
+                                CategoryId = categoryId,
+                                SizeId = sizeId,
+                                TeamId = teamId,
+
+                            };
+
                             _context.Merchandises.Add(merchandise);
+                            addedCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            errors.Add($"Рядок {row}: Помилка обробки - {ex.Message}");
+                            skippedCount++;
                         }
                     }
 
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "Товари успішно імпортовано!";
+
+                    
+                    var message = $"Додано {addedCount} нових товарів. Пропущено {skippedCount} рядків.";
+                    if (errors.Any())
+                    {
+                        message += " Помилки: " + string.Join("; ", errors);
+                    }
+                    TempData["SuccessMessage"] = message;
                     return RedirectToAction("AdminMerchandises");
                 }
             }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ShopDomain.Models;
+using ShopInfrastructure.Services;
 using ShopMVC.ShopInfrastructure;
 using System.Text;
 
@@ -24,7 +25,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
     .AddEntityFrameworkStores<MerchShopeContext>()
     .AddDefaultTokenProviders();
 
-
+builder.Services.AddScoped<ExcelService>();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
